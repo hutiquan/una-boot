@@ -20,9 +20,9 @@ spring:
     druid:
       #主数据源
       master:
-        url:  jdbc:mysql://localhost:3306/una-boot-db?useUnicode=true&useSSL=false&characterEncoding=utf8
+        url:  jdbc:mysql://www.xiaoquan.work:3306/una-boot-db?useUnicode=true&useSSL=false&characterEncoding=utf8
         username: root
-        password: root
+        password: xiaoquan
       #从数据源
       slave:
         enabled:  false

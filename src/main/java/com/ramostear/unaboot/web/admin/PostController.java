@@ -2,6 +2,7 @@ package com.ramostear.unaboot.web.admin;
 
 import com.ramostear.unaboot.common.UnaConst;
 import com.ramostear.unaboot.common.exception.UnaException;
+import com.ramostear.unaboot.common.util.BindingResultHelper;
 import com.ramostear.unaboot.common.util.DateUtils;
 import com.ramostear.unaboot.common.util.RandomUtils;
 import com.ramostear.unaboot.domain.entity.Post;
@@ -64,7 +65,9 @@ public class PostController extends UnaController {
     public ResponseEntity<Object> write(@Valid @RequestBody PostParam postParam, BindingResult bindingResult,
                                         @RequestParam(value = "autoSave",required = false,defaultValue = "0")int autoSave){
         if(bindingResult.hasFieldErrors()){
-            return badRequest("你提交的数据共有"+bindingResult.getFieldErrorCount()+"处错误，请检查更改后再提交");
+            //add by hutiquan 添加于2020.02.05 02:21:00, 像前端抛出异常信息
+            String errorMessage = BindingResultHelper.getDefaultErrorMessage(bindingResult);
+            return badRequest("你提交的数据共有"+bindingResult.getFieldErrorCount()+"处错误，请检查更改后再提交! "+ errorMessage);
         }
         try {
             Post post = postParam.convertTo();

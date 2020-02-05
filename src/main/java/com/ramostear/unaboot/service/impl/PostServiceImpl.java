@@ -11,8 +11,11 @@ import com.ramostear.unaboot.repository.PostRepository;
 import com.ramostear.unaboot.service.*;
 import com.ramostear.unaboot.service.support.UnaService;
 import lombok.extern.slf4j.Slf4j;
+import net.sf.ehcache.CacheManager;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.context.ApplicationContext;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -45,15 +48,19 @@ public class PostServiceImpl extends UnaService<Post,Integer> implements PostSer
 
     private final PostCategoryService postCategoryService;
 
-    public PostServiceImpl(PostRepository postRepository,TagService tagService,
-                           CategoryService categoryService,PostTagService postTagService,
-                           PostCategoryService postCategoryService) {
+    private final ApplicationContext applicationContext;
+
+    public PostServiceImpl(PostRepository postRepository, TagService tagService,
+        CategoryService categoryService, PostTagService postTagService,
+        PostCategoryService postCategoryService,
+        ApplicationContext applicationContext) {
         super(postRepository);
         this.postRepository = postRepository;
         this.tagService = tagService;
         this.categoryService = categoryService;
         this.postTagService =  postTagService;
         this.postCategoryService = postCategoryService;
+        this.applicationContext = applicationContext;
     }
 
     @Override
@@ -94,6 +101,7 @@ public class PostServiceImpl extends UnaService<Post,Integer> implements PostSer
 
     @Override
     @Transactional
+    @CacheEvict(value = "posts",key = "#post.slug")
     public PostVO updateBy(Post post, Set<Integer> tagIds, Integer categoryId, boolean autoSave) {
         if(autoSave){
             post.setStatus(1);
@@ -216,6 +224,8 @@ public class PostServiceImpl extends UnaService<Post,Integer> implements PostSer
         return null;
     }
 
+    //TODO @CacheEvict(value = "posts",key = "#post.slug")
+    @Transactional
     @Override
     public Post removeById(Integer postId) {
         Assert.notNull(postId,"post id must not be null");
@@ -225,7 +235,11 @@ public class PostServiceImpl extends UnaService<Post,Integer> implements PostSer
 
         List<PostCategory> postCategories = postCategoryService.removeByPostId(postId);
         log.debug("removed post category:[{}]",postCategories);
-        return super.removeById(postId);
+
+        Post post = super.removeById(postId);
+        Optional.ofNullable(post).ifPresent(p -> applicationContext.getBean(
+            CacheManager.class).getEhcache("posts").remove(p.getSlug()));
+        return post;
     }
 
     /**
